@@ -1,0 +1,24 @@
+{
+  "name": "khuzwayos.netlify",
+  "short_name": "khuzwayos.netlify",
+  "description": "Khuzwayo Movie App - Watch movies online",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#903f3f",
+  "theme_color": "#c93232",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "movie/maly-192.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "movie/maly-512.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}
