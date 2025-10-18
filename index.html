@@ -3,10 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Khuzwayo Mini Game</title>
+
+    <meta name="description" content="Khuzwayo Movie App - Watch movies online">
+    <meta name="keywords" content="movies, online streaming, watch movies, videos">
+    <meta name="robots" content="index, follow">
+    <meta name="author" content="Vainess Zulu">
+
+    <!-- Google Search Console Verification -->
+    <meta name="google-site-verification" content="wd3OH3QksxZ1ke7NSOJni3-sPFsnOutRPw7CM1KbQOI" />
+
+    <title>Khuzwayo Movie App</title>
+
+    <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="movie/maly-192.png">
     <meta name="theme-color" content="#c93232">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="./style.css">
     <style>
         body {
             background-color: #000;
@@ -53,7 +67,12 @@
     </style>
 </head>
 <body>
-    <h1>Khuzwayo Mini Game</h1>
+    <!-- Site Header -->
+    <h1>Khuzwayo Movie App</h1>
+    <p>Watch movies online with Khuzwayo Movie App</p>
+
+    <!-- Mini-Game -->
+    <h1>Mini Game</h1>
     <p>Score: <span id="score">0</span></p>
     <p>Time Left: <span id="timer">30</span>s</p>
 
@@ -61,7 +80,15 @@
         <div id="target"></div>
     </div>
 
+    <!-- JavaScript -->
     <script>
+        // --- Service Worker Registration ---
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js')
+                .then(() => console.log('Service Worker Registered'));
+        }
+
+        // --- Mini-Game Logic ---
         const gameArea = document.getElementById('gameArea');
         const target = document.getElementById('target');
         const scoreEl = document.getElementById('score');
@@ -71,7 +98,6 @@
         let timeLeft = 30;
         let gameActive = true;
 
-        // Function to move target randomly
         function moveTarget() {
             const x = Math.random() * (gameArea.clientWidth - 50);
             const y = Math.random() * (gameArea.clientHeight - 50);
@@ -79,7 +105,6 @@
             target.style.top = y + 'px';
         }
 
-        // Click event for target
         target.addEventListener('click', () => {
             if (!gameActive) return;
             score++;
@@ -87,7 +112,6 @@
             moveTarget();
         });
 
-        // Countdown timer
         const countdown = setInterval(() => {
             if (timeLeft > 0) {
                 timeLeft--;
@@ -99,12 +123,10 @@
             }
         }, 1000);
 
-        // Move target every 0.8 seconds
         const mover = setInterval(() => {
             if (gameActive) moveTarget();
         }, 800);
 
-        // Initialize first target position
         moveTarget();
     </script>
 </body>
