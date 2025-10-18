@@ -1,84 +1,128 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bet Chat App</title>
 
-  <title>Bet Chat - Sign In</title>
-  <meta name="description" content="Bet Chat - Secure messaging with Google Sign-In" />
-  <meta name="author" content="Vainess Zulu" />
-  <meta name="google-site-verification" content="wd3OH3QksxZ1ke7NSOJni3-sPFsnOutRPw7CM1KbQOI" />
+<!-- Google Verification (optional for indexing) -->
+<meta name="google-site-verification" content="YOUR_GOOGLE_VERIFICATION_KEY" />
 
-  <style>
-    body {
-      background-color: #121212;
-      color: white;
-      font-family: 'Poppins', sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      text-align: center;
-      margin: 0;
+<!-- Firebase SDKs -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-app.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-auth.js";
+  import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-database.js";
+  import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.1.0/firebase-messaging.js";
+
+  // ---------------- Firebase Config ----------------
+  const firebaseConfig = {
+    apiKey: "AIzaSyADcUVWAPrj8vd6sVV2858j8vp0HHxk1EE",
+    authDomain: "chat-betting.firebaseapp.com",
+    projectId: "chat-betting",
+    storageBucket: "chat-betting.firebasestorage.app",
+    messagingSenderId: "914280554481",
+    appId: "1:914280554481:web:dff2923954427c1e02ee50"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const provider = new GoogleAuthProvider();
+  const db = getDatabase(app);
+  const messaging = getMessaging(app);
+
+  // ---------------- Google Sign-In ----------------
+  let currentUser = null;
+  window.signIn = async () => {
+    try {
+      const result = await signInWithPopup(auth, provider);
+      currentUser = result.user;
+      document.getElementById("usernameDisplay").textContent = currentUser.displayName;
+      document.getElementById("loginBtn").style.display = "none";
+      document.getElementById("logoutBtn").style.display = "inline-block";
+    } catch (err) {
+      console.error(err);
+      alert("Sign-in failed!");
     }
-    h1 {
-      color: #00bcd4;
-      margin-bottom: 30px;
-    }
-    #googleSignInBtn {
-      background-color: #4285F4;
-      color: white;
-      border: none;
-      padding: 12px 25px;
-      border-radius: 8px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-    #googleSignInBtn:hover {
-      background-color: #357ae8;
-    }
-  </style>
-</head>
-<body>
-  <h1>Welcome to Bet Chat</h1>
-  <p>Sign in with Google to start chatting securely</p>
-  <button id="googleSignInBtn">Sign in with Google</button>
+  }
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-    import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+  window.signOutUser = () => {
+    signOut(auth);
+    currentUser = null;
+    document.getElementById("usernameDisplay").textContent = "Guest";
+    document.getElementById("loginBtn").style.display = "inline-block";
+    document.getElementById("logoutBtn").style.display = "none";
+  }
 
-    // Firebase Config
-    const firebaseConfig = {
-      apiKey: "AIzaSyAQVdGGRo7zLdCd89ME0IRmnQqxwmk27GY",
-      authDomain: "bet-chat-d33be.firebaseapp.com",
-      databaseURL: "https://bet-chat-d33be-default-rtdb.firebaseio.com",
-      projectId: "bet-chat-d33be",
-      storageBucket: "bet-chat-d33be.firebasestorage.app",
-      messagingSenderId: "942555083805",
-      appId: "1:942555083805:web:74dbd3901a386e3b66c2f4"
-    };
+  // ---------------- Chat ----------------
+  const chatForm = () => {
+    const form = document.getElementById("chatForm");
+    const input = document.getElementById("chatInput");
+    const area = document.getElementById("chatArea");
 
-    // Initialize Firebase
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const provider = new GoogleAuthProvider();
-
-    // Google Sign-In Logic
-    document.getElementById("googleSignInBtn").addEventListener("click", () => {
-      signInWithPopup(auth, provider)
-        .then((result) => {
-          const user = result.user;
-          localStorage.setItem("user", JSON.stringify(user));
-          alert("Welcome " + user.displayName + "!");
-          window.location.href = "chat.html"; // Redirect to chat page
-        })
-        .catch((error) => {
-          alert("Error: " + error.message);
-          console.error("Google Sign-In Error:", error);
-        });
+    form.addEventListener("submit", e => {
+      e.preventDefault();
+      if (!currentUser) return alert("Please sign in first!");
+      const msg = input.value.trim();
+      if (!msg) return;
+      push(ref(db, "messages"), {
+        sender: currentUser.displayName,
+        uid: currentUser.uid,
+        message: msg,
+        timestamp: Date.now()
+      });
+      input.value = "";
     });
-  </script>
+
+    const messagesRef = ref(db, "messages");
+    onChildAdded(messagesRef, snapshot => {
+      const data = snapshot.val();
+      const div = document.createElement("div");
+      div.textContent = `${data.sender}: ${data.message}`;
+      area.appendChild(div);
+      area.scrollTop = area.scrollHeight;
+    });
+  }
+
+  window.initChat = () => chatForm();
+
+  // ---------------- Notifications ----------------
+  Notification.requestPermission().then(permission => {
+    if (permission === "granted") {
+      getToken(messaging, { vapidKey: "YOUR_VAPID_KEY_HERE" })
+        .then(token => console.log("FCM Token:", token))
+        .catch(console.error);
+    }
+  });
+
+  onMessage(messaging, payload => {
+    alert(`New message from ${payload.notification.title}: ${payload.notification.body}`);
+  });
+</script>
+
+<style>
+  body { font-family: 'Poppins', sans-serif; background: #111; color: #fff; text-align: center; padding: 20px; }
+  #chatArea { width: 90%; max-width: 500px; height: 400px; margin: 10px auto; background: #222; overflow-y: auto; padding: 10px; border-radius: 10px; }
+  #chatInput { width: 70%; padding: 10px; border-radius: 5px; border: none; }
+  #chatForm button { padding: 10px 20px; border-radius: 5px; border: none; background: #ff3d3d; color: #fff; cursor: pointer; }
+  #loginBtn, #logoutBtn { margin: 10px; padding: 10px 20px; border: none; border-radius: 5px; background: #3b82f6; color: #fff; cursor: pointer; }
+</style>
+</head>
+
+<body onload="initChat()">
+
+  <h1>Bet Chat App</h1>
+  <p>Welcome, <span id="usernameDisplay">Guest</span></p>
+
+  <button id="loginBtn" onclick="signIn()">Sign in with Google</button>
+  <button id="logoutBtn" onclick="signOutUser()" style="display:none;">Sign Out</button>
+
+  <div id="chatArea"></div>
+
+  <form id="chatForm">
+    <input type="text" id="chatInput" placeholder="Type a message..." autocomplete="off" required>
+    <button type="submit">Send</button>
+  </form>
+
 </body>
 </html>
