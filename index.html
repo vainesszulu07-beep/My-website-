@@ -1,168 +1,303 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<meta name="description" content="Kwacha Money Transfer App - Send money online">
-<meta name="keywords" content="money transfer, kwacha, online banking">
-<meta name="robots" content="index, follow">
-<meta name="author" content="Vainess Zulu">
-
-<!-- Google Search Console Verification -->
-<meta name="google-site-verification" content="wd3OH3QksxZ1ke7NSOJni3-sPFsnOutRPw7CM1KbQOI" />
-
-<title>Kwacha Money Transfer App</title>
-
-<!-- PWA Manifest -->
-<link rel="manifest" href="manifest.json">
-<link rel="icon" href="movie/maly-192.png">
-<meta name="theme-color" content="#c93232">
-
-<!-- CSS -->
-<link rel="stylesheet" href="./style.css">
-<style>
-    body {
-        background-color: #000;
-        color: #fff;
-        font-family: 'Poppins', sans-serif;
-        text-align: center;
-        margin: 0;
-        padding: 20px;
-    }
-
-    input, button {
-        padding: 10px;
-        margin: 5px;
-        border-radius: 5px;
-        border: none;
-    }
-
-    button { cursor: pointer; background: #ff3d3d; color: #fff; }
-
-    .hidden { display: none; }
-
-    #usersList { margin-top: 20px; }
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Bet Chat — Encrypted</title>
+  <meta name="google-site-verification" content="wd3OH3QksxZ1ke7NSOJni3-sPFsnOutRPw7CM1KbQOI" />
+  <meta name="theme-color" content="#c93232" />
+  <link rel="manifest" href="/manifest.json" />
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;background:#f4f4f6;margin:0;padding:20px;text-align:center;}
+    #login,#app{max-width:900px;margin:20px auto}
+    #chatBox{background:#fff;height:420px;overflow:auto;border-radius:8px;padding:12px;border:1px solid #ddd;text-align:left}
+    .msg{margin:6px 0;padding:8px;border-radius:8px;background:#eef;display:inline-block;max-width:70%}
+    .my{background:#cfe9ff;margin-left:auto;display:block}
+    #controls{display:flex;gap:8px;justify-content:center;margin-top:12px}
+    input,button,select{padding:8px;border-radius:6px;border:1px solid #ccc}
+    button{background:#c93232;color:#fff;border:none;cursor:pointer}
+    #groups{margin:12px 0}
+  </style>
 </head>
 <body>
+  <div id="login">
+    <h1>Bet Chat — Encrypted</h1>
+    <button id="loginBtn">Sign in with Google</button>
+  </div>
 
-<!-- App Header -->
-<h1>Kwacha Money Transfer App</h1>
-<p>Send money securely using Kwacha</p>
+  <div id="app" style="display:none">
+    <h2>Welcome, <span id="userName"></span></h2>
 
-<!-- Registration / Login -->
-<div id="auth">
-    <h2>Register / Login</h2>
-    <input type="text" id="username" placeholder="Username">
-    <input type="password" id="password" placeholder="Password">
-    <button onclick="registerOrLogin()">Register / Login</button>
-</div>
+    <div id="groups">
+      <input id="groupName" placeholder="New group name (or leave blank for Global)">
+      <input id="groupPass" placeholder="Optional group passphrase (share out-of-band)" type="password">
+      <button id="createGroupBtn">Create Group</button>
 
-<!-- Main app -->
-<div id="app" class="hidden">
-    <h2>Welcome, <span id="currentUser"></span></h2>
-    <p>Balance: K<span id="balance">0</span></p>
+      <br><br>
+      <label>Join / Select Group:</label>
+      <select id="groupSelect"><option value="global">🌍 Global</option></select>
+      <input id="joinPass" placeholder="Passphrase to join (if required)" type="password">
+      <button id="joinGroupBtn">Join</button>
+    </div>
 
-    <h3>Transfer Money</h3>
-    <input type="text" id="recipient" placeholder="Recipient username">
-    <input type="number" id="amount" placeholder="Amount">
-    <button onclick="transferMoney()">Send</button>
+    <div id="chatBox"></div>
 
-    <h3>Transaction History</h3>
-    <ul id="history"></ul>
+    <div id="controls">
+      <input id="messageInput" placeholder="Type a message" style="flex:1">
+      <button id="sendBtn">Send</button>
+    </div>
 
-    <h3>Registered Users</h3>
-    <ul id="usersList"></ul>
+    <p><button id="logoutBtn">Logout</button></p>
+  </div>
 
-    <button onclick="logout()">Logout</button>
-</div>
+  <!-- Firebase (v10) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js"></script>
 
-<script>
-    // --- Service Worker Registration ---
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('service-worker.js')
-            .then(() => console.log('Service Worker Registered'));
+  <!-- CryptoJS for AES -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+
+  <script>
+  /* ========== CONFIG (keep as-is) ========== */
+  const firebaseConfig = {
+    apiKey: "AIzaSyAQVdGGRo7zLdCd89ME0IRmnQqxwmk27GY",
+    authDomain: "bet-chat-d33be.firebaseapp.com",
+    databaseURL: "https://bet-chat-d33be-default-rtdb.firebaseio.com",
+    projectId: "bet-chat-d33be",
+    storageBucket: "bet-chat-d33be.firebasestorage.app",
+    messagingSenderId: "942555083805",
+    appId: "1:942555083805:web:74dbd3901a386e3b66c2f4"
+  };
+
+  /* ========== Initialize Firebase ========== */
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.database();
+
+  /* ========== UI refs ========== */
+  const loginBtn = document.getElementById('loginBtn');
+  const loginDiv = document.getElementById('login');
+  const appDiv = document.getElementById('app');
+  const userNameEl = document.getElementById('userName');
+  const chatBox = document.getElementById('chatBox');
+  const messageInput = document.getElementById('messageInput');
+  const sendBtn = document.getElementById('sendBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
+
+  const groupNameInput = document.getElementById('groupName');
+  const groupPassInput = document.getElementById('groupPass');
+  const createGroupBtn = document.getElementById('createGroupBtn');
+  const groupSelect = document.getElementById('groupSelect');
+  const joinPass = document.getElementById('joinPass');
+  const joinGroupBtn = document.getElementById('joinGroupBtn');
+
+  /* ========== Crypto helpers (AES using passphrase-derived key) ========== */
+  function deriveKeyFromPassphrase(passphrase, salt="bet-chat-salt") {
+    // PBKDF2 derive a 256-bit key
+    return CryptoJS.PBKDF2(passphrase, salt, { keySize: 256/32, iterations: 1000 }).toString();
+  }
+
+  function encryptText(plainText, passphraseOrKey) {
+    // passphraseOrKey may be a raw key string or user-provided passphrase
+    // CryptoJS accepts passphrase directly for AES.encrypt; to be explicit we'll use key + IV
+    const key = CryptoJS.enc.Hex.parse(typeof passphraseOrKey === 'string' && passphraseOrKey.length===64 ? passphraseOrKey : deriveKeyFromPassphrase(passphraseOrKey));
+    const iv = CryptoJS.lib.WordArray.random(16);
+    const encrypted = CryptoJS.AES.encrypt(plainText, key, { iv: iv });
+    // store IV with ciphertext (hex)
+    return iv.toString(CryptoJS.enc.Hex) + ":" + encrypted.ciphertext.toString(CryptoJS.enc.Hex);
+  }
+
+  function decryptText(cipherPackage, passphraseOrKey) {
+    try {
+      const parts = cipherPackage.split(":");
+      const ivHex = parts[0];
+      const ctHex = parts[1];
+      const key = CryptoJS.enc.Hex.parse(typeof passphraseOrKey === 'string' && passphraseOrKey.length===64 ? passphraseOrKey : deriveKeyFromPassphrase(passphraseOrKey));
+      const iv = CryptoJS.enc.Hex.parse(ivHex);
+      const cipherParams = CryptoJS.lib.CipherParams.create({ ciphertext: CryptoJS.enc.Hex.parse(ctHex) });
+      const dec = CryptoJS.AES.decrypt(cipherParams, key, { iv: iv });
+      return dec.toString(CryptoJS.enc.Utf8);
+    } catch (e) {
+      return null; // decryption failed
     }
+  }
 
-    // --- Money Transfer App Logic ---
-    let users = JSON.parse(localStorage.getItem('users') || '{}');
-    let currentUser = null;
-
-    function saveUsers() {
-        localStorage.setItem('users', JSON.stringify(users));
+  /* ========== Key storage (per-user) ========== */
+  // We generate a per-user local key and store it in localStorage under e2e_key_<uid>.
+  // This allows the same user on the same browser to decrypt their messages.
+  function ensureLocalUserKey(uid) {
+    const keyName = 'e2e_key_' + uid;
+    let key = localStorage.getItem(keyName);
+    if (!key) {
+      // generate 256-bit key (hex)
+      key = CryptoJS.lib.WordArray.random(32).toString(CryptoJS.enc.Hex);
+      localStorage.setItem(keyName, key);
     }
+    return key; // hex string (64 chars)
+  }
 
-    function registerOrLogin() {
-        const username = document.getElementById('username').value.trim();
-        const password = document.getElementById('password').value;
+  /* ========== App state ========== */
+  let currentGroup = 'global';
+  let currentKeyForGroup = null; // either group passphrase-derived key (hex) or user's local key
 
-        if (!username || !password) return alert("Enter username and password!");
+  /* ========== Auth handlers ========== */
+  loginBtn.onclick = async () => {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    try {
+      await auth.signInWithPopup(provider);
+    } catch (e) {
+      alert('Login failed: ' + e.message);
+    }
+  };
 
-        if (!users[username]) {
-            users[username] = { password: password, balance: 100, history: [] };
-            alert("Account created with K100 starting balance!");
-        } else {
-            if (users[username].password !== password) return alert("Incorrect password!");
-            alert("Logged in!");
+  logoutBtn.onclick = () => auth.signOut();
+
+  auth.onAuthStateChanged(user => {
+    if (user) {
+      loginDiv.style.display = 'none';
+      appDiv.style.display = 'block';
+      userNameEl.textContent = user.displayName || user.email;
+      // ensure local key
+      ensureLocalUserKey(user.uid);
+      loadGroups();
+      joinGroup('global'); // auto-join global
+    } else {
+      loginDiv.style.display = 'block';
+      appDiv.style.display = 'none';
+      chatBox.innerHTML = '';
+    }
+  });
+
+  /* ========== Groups ========== */
+  createGroupBtn.onclick = async () => {
+    const name = groupNameInput.value.trim();
+    const pass = groupPassInput.value;
+    if (!name) return alert('Enter group name');
+    // store group metadata; if pass provided, store a salted hash in DB to indicate it requires passphrase
+    const groupRef = db.ref('groups/' + name);
+    const meta = { createdBy: auth.currentUser.uid, ts: Date.now() };
+    if (pass) {
+      // store only a hash (not the passphrase) - this indicates password-protected; actual passphrase never stored
+      meta.passHash = CryptoJS.SHA256(pass + name).toString(); // acts as verifier
+    }
+    await groupRef.set(meta);
+    groupNameInput.value = '';
+    groupPassInput.value = '';
+  };
+
+  function loadGroups() {
+    const groupsRef = db.ref('groups');
+    groupsRef.off();
+    groupsRef.on('value', snap => {
+      groupSelect.innerHTML = '<option value="global">🌍 Global</option>';
+      snap.forEach(g => {
+        const opt = document.createElement('option');
+        opt.value = g.key;
+        opt.textContent = g.key;
+        groupSelect.appendChild(opt);
+      });
+    });
+  }
+
+  joinGroupBtn.onclick = () => {
+    const name = groupSelect.value;
+    const pass = joinPass.value;
+    joinGroup(name, pass);
+  };
+
+  async function joinGroup(name, passphrase) {
+    currentGroup = name || 'global';
+    chatBox.innerHTML = '';
+    // determine key for this group:
+    if (name === 'global') {
+      // global: use user's private local key
+      currentKeyForGroup = ensureLocalUserKey(auth.currentUser.uid);
+    } else {
+      // check if group requires passphrase by reading groups/<name>/passHash
+      const metaSnap = await db.ref('groups/' + name).get();
+      const meta = metaSnap.val() || {};
+      if (meta.passHash) {
+        if (!passphrase) {
+          alert('This group requires a passphrase. Enter it in "Passphrase to join".');
+          return;
         }
-
-        currentUser = username;
-        document.getElementById('auth').classList.add('hidden');
-        document.getElementById('app').classList.remove('hidden');
-        document.getElementById('currentUser').textContent = currentUser;
-        updateUI();
-        saveUsers();
+        // verify passphrase locally: compute hash(pass + groupName) and compare
+        const verify = CryptoJS.SHA256(passphrase + name).toString();
+        if (verify !== meta.passHash) {
+          return alert('Incorrect passphrase.');
+        }
+        // accepted — derive key from passphrase+group as salt
+        currentKeyForGroup = deriveKeyFromPassphrase(passphrase, name + '-salt');
+      } else {
+        // public group: use user's local key
+        currentKeyForGroup = ensureLocalUserKey(auth.currentUser.uid);
+      }
     }
+    // load messages for this group
+    loadMessagesForGroup(currentGroup);
+  }
 
-    function transferMoney() {
-        const recipient = document.getElementById('recipient').value.trim();
-        const amount = parseFloat(document.getElementById('amount').value);
+  /* ========== Messages ========= */
+  sendBtn.onclick = async () => {
+    const text = messageInput.value.trim();
+    if (!text) return;
+    if (!auth.currentUser) return alert('Not signed in');
+    if (!currentKeyForGroup) return alert('You must join the group (and input passphrase if required)');
 
-        if (!recipient || isNaN(amount) || amount <= 0) return alert("Enter valid recipient and amount!");
-        if (!users[recipient]) return alert("Recipient does not exist!");
-        if (recipient === currentUser) return alert("Cannot send to yourself!");
-        if (users[currentUser].balance < amount) return alert("Insufficient balance!");
+    // encrypt with currentKeyForGroup (hex) or passphrase
+    const cipher = encryptText(text, currentKeyForGroup);
+    const msg = {
+      user: auth.currentUser.displayName || auth.currentUser.email,
+      uid: auth.currentUser.uid,
+      text: cipher,
+      ts: Date.now()
+    };
+    await db.ref('messages/' + currentGroup).push(msg);
+    messageInput.value = '';
+  };
 
-        users[currentUser].balance -= amount;
-        users[recipient].balance += amount;
+  let childListener = null;
+  function loadMessagesForGroup(group) {
+    // detach previous listener
+    if (childListener) db.ref('messages/' + childListener).off();
+    childListener = group;
+    const refGroup = db.ref('messages/' + group);
+    refGroup.off();
+    refGroup.on('child_added', snap => {
+      const data = snap.val();
+      // try to decrypt using currentKeyForGroup
+      const plain = decryptText(data.text, currentKeyForGroup);
+      const div = document.createElement('div');
+      div.className = 'msg';
+      if (data.uid === auth.currentUser.uid) div.classList.add('my');
+      if (plain === null) {
+        div.textContent = `${data.user}: (encrypted message) — cannot decrypt`;
+      } else {
+        div.textContent = `${data.user}: ${plain}`;
+        // show browser notification if message not from me
+        if (data.uid !== auth.currentUser.uid && Notification.permission === 'granted') {
+          new Notification('New message from ' + data.user, { body: plain });
+        }
+      }
+      chatBox.appendChild(div);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    });
+  }
 
-        users[currentUser].history.push(`Sent K${amount} to ${recipient}`);
-        users[recipient].history.push(`Received K${amount} from ${currentUser}`);
+  /* ========== Ask for Notification permission ========== */
+  if ('Notification' in window && Notification.permission !== 'granted') {
+    Notification.requestPermission();
+  }
 
-        updateUI();
-        saveUsers();
-        alert("Transfer successful!");
-    }
+  /* ========== Service worker registration for PWA & future push integration ========== */
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/service-worker.js').catch(e => console.warn('SW registration failed', e));
+  }
 
-    function updateUI() {
-        document.getElementById('balance').textContent = users[currentUser].balance;
-
-        const historyEl = document.getElementById('history');
-        historyEl.innerHTML = '';
-        users[currentUser].history.forEach(item => {
-            const li = document.createElement('li');
-            li.textContent = item;
-            historyEl.appendChild(li);
-        });
-
-        const usersEl = document.getElementById('usersList');
-        usersEl.innerHTML = '';
-        Object.keys(users).forEach(user => {
-            const li = document.createElement('li');
-            li.textContent = user; // Only show username, no balance
-            usersEl.appendChild(li);
-        });
-    }
-
-    function logout() {
-        currentUser = null;
-        document.getElementById('auth').classList.remove('hidden');
-        document.getElementById('app').classList.add('hidden');
-        document.getElementById('username').value = '';
-        document.getElementById('password').value = '';
-    }
-</script>
-
+  /* ========== Utility: simple UI initializers ========== */
+  // set default group to global in select (global option exists)
+  groupSelect.value = 'global';
+  </script>
 </body>
 </html>
