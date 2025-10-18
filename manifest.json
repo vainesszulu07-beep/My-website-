@@ -1,24 +1,36 @@
 {
-  "name": "khuzwayos.netlify",
-  "short_name": "khuzwayos.netlify",
-  "description": "Khuzwayo Movie App - Watch movies online",
+  "id": "/",
+  "name": "Khuzwayo Movie App",
+  "short_name": "Khuzwayo",
+  "description": "Watch movies online with Khuzwayo Movie App",
+  "lang": "en",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "minimal-ui"],
   "orientation": "any",
   "background_color": "#903f3f",
   "theme_color": "#c93232",
-  "dir": "ltr",
+  "categories": ["entertainment", "video", "movies"],
   "icons": [
     {
-      "src": "movie/maly-192.jpg",
+      "src": "movie/maly-192.png",
       "sizes": "192x192",
-      "type": "image/jpeg"
+      "type": "image/png"
     },
     {
-      "src": "movie/maly-512.jpg",
+      "src": "movie/maly-512.png",
       "sizes": "512x512",
-      "type": "image/jpeg"
+      "type": "image/png"
     }
-  ]
+  ],
+  "shortcuts": [
+    {
+      "name": "Browse Movies",
+      "url": "/",
+      "icons": [{ "src": "movie/maly-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
 }
