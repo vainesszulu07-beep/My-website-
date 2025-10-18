@@ -1,133 +1,131 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <meta name="description" content="Khuzwayo Movie App - Watch movies online">
-    <meta name="keywords" content="movies, online streaming, watch movies, videos">
-    <meta name="robots" content="index, follow">
-    <meta name="author" content="Vainess Zulu">
-
-    <!-- Google Search Console Verification -->
-    <meta name="google-site-verification" content="wd3OH3QksxZ1ke7NSOJni3-sPFsnOutRPw7CM1KbQOI" />
-
-    <title>Khuzwayo Movie App</title>
-
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="manifest.json">
-    <link rel="icon" href="movie/maly-192.png">
-    <meta name="theme-color" content="#c93232">
-
-    <!-- CSS -->
-    <link rel="stylesheet" href="./style.css">
-    <style>
-        body {
-            background-color: #000;
-            color: #fff;
-            font-family: 'Poppins', sans-serif;
-            text-align: center;
-            margin: 0;
-            padding: 20px;
-        }
-
-        #gameArea {
-            position: relative;
-            width: 300px;
-            height: 300px;
-            margin: 20px auto;
-            background-color: #222;
-            border-radius: 15px;
-            overflow: hidden;
-        }
-
-        #target {
-            width: 50px;
-            height: 50px;
-            background-color: #ff3d3d;
-            position: absolute;
-            border-radius: 50%;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        h1 {
-            color: #ff3d3d;
-            text-shadow: 0 0 10px #ff3d3d, 0 0 20px #ff3d3d;
-        }
-
-        p {
-            font-size: 18px;
-        }
-
-        #timer {
-            font-weight: bold;
-            color: #00ff00;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Khuzwayo Money App Prototype</title>
+<style>
+    body { font-family: Arial, sans-serif; background: #222; color: #fff; text-align: center; padding: 20px; }
+    input, button { padding: 10px; margin: 5px; border-radius: 5px; border: none; }
+    button { cursor: pointer; background: #ff3d3d; color: #fff; }
+    .hidden { display: none; }
+    #usersList { margin-top: 20px; }
+</style>
 </head>
 <body>
-    <!-- Site Header -->
-    <h1>Khuzwayo Movie App</h1>
-    <p>Watch movies online with Khuzwayo Movie App</p>
 
-    <!-- Mini-Game -->
-    <h1>Mini Game</h1>
-    <p>Score: <span id="score">0</span></p>
-    <p>Time Left: <span id="timer">30</span>s</p>
+<h1>Khuzwayo Money App Prototype</h1>
 
-    <div id="gameArea">
-        <div id="target"></div>
-    </div>
+<!-- Registration / Login -->
+<div id="auth">
+    <h2>Register / Login</h2>
+    <input type="text" id="username" placeholder="Username">
+    <input type="password" id="password" placeholder="Password">
+    <button onclick="registerOrLogin()">Register / Login</button>
+</div>
 
-    <!-- JavaScript -->
-    <script>
-        // --- Service Worker Registration ---
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('service-worker.js')
-                .then(() => console.log('Service Worker Registered'));
+<!-- Main app -->
+<div id="app" class="hidden">
+    <h2>Welcome, <span id="currentUser"></span></h2>
+    <p>Balance: K<span id="balance">0</span></p>
+
+    <h3>Transfer Money</h3>
+    <input type="text" id="recipient" placeholder="Recipient username">
+    <input type="number" id="amount" placeholder="Amount">
+    <button onclick="transferMoney()">Send</button>
+
+    <h3>Transaction History</h3>
+    <ul id="history"></ul>
+
+    <h3>All Users</h3>
+    <ul id="usersList"></ul>
+
+    <button onclick="logout()">Logout</button>
+</div>
+
+<script>
+    // Shared users database in localStorage
+    let users = JSON.parse(localStorage.getItem('users') || '{}');
+    let currentUser = null;
+
+    function saveUsers() {
+        localStorage.setItem('users', JSON.stringify(users));
+    }
+
+    function registerOrLogin() {
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value;
+
+        if (!username || !password) return alert("Enter username and password!");
+
+        // New user registration
+        if (!users[username]) {
+            users[username] = { password: password, balance: 100, history: [] };
+            alert("Account created with K100 starting balance!");
+        } else {
+            // Existing user login
+            if (users[username].password !== password) return alert("Incorrect password!");
+            alert("Logged in!");
         }
 
-        // --- Mini-Game Logic ---
-        const gameArea = document.getElementById('gameArea');
-        const target = document.getElementById('target');
-        const scoreEl = document.getElementById('score');
-        const timerEl = document.getElementById('timer');
+        currentUser = username;
+        document.getElementById('auth').classList.add('hidden');
+        document.getElementById('app').classList.remove('hidden');
+        document.getElementById('currentUser').textContent = currentUser;
+        updateUI();
+        saveUsers();
+    }
 
-        let score = 0;
-        let timeLeft = 30;
-        let gameActive = true;
+    function transferMoney() {
+        const recipient = document.getElementById('recipient').value.trim();
+        const amount = parseFloat(document.getElementById('amount').value);
 
-        function moveTarget() {
-            const x = Math.random() * (gameArea.clientWidth - 50);
-            const y = Math.random() * (gameArea.clientHeight - 50);
-            target.style.left = x + 'px';
-            target.style.top = y + 'px';
-        }
+        if (!recipient || isNaN(amount) || amount <= 0) return alert("Enter valid recipient and amount!");
+        if (!users[recipient]) return alert("Recipient does not exist!");
+        if (recipient === currentUser) return alert("Cannot send to yourself!");
+        if (users[currentUser].balance < amount) return alert("Insufficient balance!");
 
-        target.addEventListener('click', () => {
-            if (!gameActive) return;
-            score++;
-            scoreEl.textContent = score;
-            moveTarget();
+        // Transfer
+        users[currentUser].balance -= amount;
+        users[recipient].balance += amount;
+
+        // Record history
+        users[currentUser].history.push(`Sent K${amount} to ${recipient}`);
+        users[recipient].history.push(`Received K${amount} from ${currentUser}`);
+
+        updateUI();
+        saveUsers();
+        alert("Transfer successful!");
+    }
+
+    function updateUI() {
+        document.getElementById('balance').textContent = users[currentUser].balance;
+
+        const historyEl = document.getElementById('history');
+        historyEl.innerHTML = '';
+        users[currentUser].history.forEach(item => {
+            const li = document.createElement('li');
+            li.textContent = item;
+            historyEl.appendChild(li);
         });
 
-        const countdown = setInterval(() => {
-            if (timeLeft > 0) {
-                timeLeft--;
-                timerEl.textContent = timeLeft;
-            } else {
-                clearInterval(countdown);
-                gameActive = false;
-                alert("Time's up! Your score: " + score);
-            }
-        }, 1000);
+        const usersEl = document.getElementById('usersList');
+        usersEl.innerHTML = '';
+        Object.keys(users).forEach(user => {
+            const li = document.createElement('li');
+            li.textContent = `${user} - K${users[user].balance}`;
+            usersEl.appendChild(li);
+        });
+    }
 
-        const mover = setInterval(() => {
-            if (gameActive) moveTarget();
-        }, 800);
+    function logout() {
+        currentUser = null;
+        document.getElementById('auth').classList.remove('hidden');
+        document.getElementById('app').classList.add('hidden');
+        document.getElementById('username').value = '';
+        document.getElementById('password').value = '';
+    }
+</script>
 
-        moveTarget();
-    </script>
 </body>
 </html>
