@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bet Chat</title>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #000;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      margin: 0;
+    }
+    #messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+      background-color: #121212;
+    }
+    #inputArea {
+      display: flex;
+      padding: 10px;
+      background-color: #1e1e1e;
+    }
+    #messageInput {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+    }
+    #sendBtn {
+      background: #00bcd4;
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 5px;
+      margin-left: 10px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="messages"></div>
+  <div id="inputArea">
+    <input type="text" id="messageInput" placeholder="Type a message..." />
+    <button id="sendBtn">Send</button>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+    import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAQVdGGRo7zLdCd89ME0IRmnQqxwmk27GY",
+      authDomain: "bet-chat-d33be.firebaseapp.com",
+      databaseURL: "https://bet-chat-d33be-default-rtdb.firebaseio.com",
+      projectId: "bet-chat-d33be",
+      storageBucket: "bet-chat-d33be.firebasestorage.app",
+      messagingSenderId: "942555083805",
+      appId: "1:942555083805:web:74dbd3901a386e3b66c2f4"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (!user) window.location.href = "index.html";
+
+    const messageRef = ref(db, "messages");
+
+    document.getElementById("sendBtn").addEventListener("click", () => {
+      const text = document.getElementById("messageInput").value.trim();
+      if (text === "") return;
+      push(messageRef, {
+        name: user.displayName,
+        message: text,
+        time: new Date().toLocaleTimeString()
+      });
+      document.getElementById("messageInput").value = "";
+    });
+
+    onChildAdded(messageRef, (snapshot) => {
+      const msg = snapshot.val();
+      const msgEl = document.createElement("div");
+      msgEl.innerHTML = `<b>${msg.name}:</b> ${msg.message} <small>(${msg.time})</small>`;
+      document.getElementById("messages").appendChild(msgEl);
+    });
+  </script>
+</body>
+</html>
